@@ -7,6 +7,12 @@
     <meta name="description" content="">
 
     <link rel="icon" type="image/png" href="/public/favicon.png">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css"
+      integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+   crossorigin=""/>
+    <style>
+      #map { height: 400px; }
+    </style>
 
     <title>A Title</title>
 
@@ -14,11 +20,63 @@
 
     <body>
         <section id="app"></section>
+        <section id="map"></section>
         <script type="module">
             // https://rustwasm.github.io/docs/wasm-bindgen/examples/without-a-bundler.html
             import init from '/pkg/package.js';
+            import { get_map_entries, update_bbox, marker_clicked } from '/pkg/package.js';
             init('/pkg/package_bg.wasm');
+            window.get_map_entries = get_map_entries;
+            window.update_bbox = update_bbox;
+            window.marker_clicked = marker_clicked;
         </script>
+        <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"
+   integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og=="
+   crossorigin=""></script>
+    <script>
 
+      var token = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
+      var map = L.map('map').setView([48.0, 8.0],8)
+      L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+          attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+          maxZoom: 18,
+          id: 'mapbox.streets',
+          accessToken: token
+        }).addTo(map);
+
+      var markers = L.layerGroup();
+
+      markers.addTo(map);
+
+      var setMapCenter = (lat, lng) => {
+        console.log("JS: got ev", lat, lng);
+        map.setView([lat, lng],8);
+        updateBbox();
+      };
+
+      var updateBbox = () => {
+        let bounds = map.getBounds();
+        let ne = bounds.getNorthEast();
+        let sw = bounds.getSouthWest();
+        update_bbox(ne.lat, ne.lng, sw.lat, sw.lng);
+      };
+
+      var updateMap = () => {
+        var entries = get_map_entries();
+        console.log("Got entries", entries);
+        markers.clearLayers();
+        entries
+          //.map(e => L.marker([e.lat, e.lng]))
+          .forEach(e => {
+            let m = L.marker([e.lat, e.lng]);
+            m.bindPopup(e.name);
+            m.on('click',()=>{marker_clicked(e.id);})
+            m.addTo(markers);
+          });
+      };
+      map.on('moveend',updateBbox);
+      map.on('zoomend',updateBbox);
+    </script>
     </body>
+
 </html>
