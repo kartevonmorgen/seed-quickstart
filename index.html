@@ -25,7 +25,10 @@
             // https://rustwasm.github.io/docs/wasm-bindgen/examples/without-a-bundler.html
             import init from '/pkg/package.js';
             import { get_map_entries, update_bbox, marker_clicked } from '/pkg/package.js';
-            init('/pkg/package_bg.wasm');
+            console.log("init wasm");
+            init('/pkg/package_bg.wasm').then((res,err) => {
+              updateBbox();
+            });
             window.get_map_entries = get_map_entries;
             window.update_bbox = update_bbox;
             window.marker_clicked = marker_clicked;
@@ -76,6 +79,7 @@
       };
       map.on('moveend',updateBbox);
       map.on('zoomend',updateBbox);
+      window.updateBbox = updateBbox;
     </script>
     </body>
 
