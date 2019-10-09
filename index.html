@@ -24,20 +24,20 @@
         <script type="module">
             // https://rustwasm.github.io/docs/wasm-bindgen/examples/without-a-bundler.html
             import init from '/pkg/package.js';
-            import { get_map_entries, update_bbox, marker_clicked } from '/pkg/package.js';
+            import { start, BBox } from '/pkg/package.js';
             console.log("init wasm");
             init('/pkg/package_bg.wasm').then((res,err) => {
+              const [marker_clicked, update_bbox] = start();
+              window.marker_clicked = marker_clicked;
+              window.update_bbox = update_bbox;
               updateBbox();
             });
-            window.get_map_entries = get_map_entries;
-            window.update_bbox = update_bbox;
-            window.marker_clicked = marker_clicked;
+            window.BBox = BBox;
         </script>
         <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"
    integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og=="
    crossorigin=""></script>
     <script>
-
       var token = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
       var map = L.map('map').setView([48.0, 8.0],8)
       L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
@@ -61,18 +61,17 @@
         let bounds = map.getBounds();
         let ne = bounds.getNorthEast();
         let sw = bounds.getSouthWest();
-        update_bbox(ne.lat, ne.lng, sw.lat, sw.lng);
+        update_bbox(new BBox(sw.lat, sw.lng, ne.lat, ne.lng));
       };
 
-      var updateMap = () => {
-        var entries = get_map_entries();
+      var updateMap = (entries) => {
         console.log("Got entries", entries);
         markers.clearLayers();
         entries
           //.map(e => L.marker([e.lat, e.lng]))
           .forEach(e => {
             let m = L.marker([e.lat, e.lng]);
-            m.bindPopup(e.name);
+            m.bindPopup(e.title);
             m.on('click',()=>{marker_clicked(e.id);})
             m.addTo(markers);
           });
